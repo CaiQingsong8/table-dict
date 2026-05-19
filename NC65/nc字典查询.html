@@ -222,14 +222,13 @@
             }
         }
             .highlight {
-            animation: highlightFade 2s ease;
-        }
-        @keyframes highlightFade {
-            0% { background-color: #ffd700; }
-            100% { background-color: transparent; }
+            box-shadow: 0 0 0 3px #00bcd4;
+            border-radius: 10px;
+            transition: box-shadow 0.3s ease;
         }
         .search-highlight {
-            animation: highlightFade 2s ease;
+            background: #e0f7fa !important;
+            transition: background 0.3s ease;
         }
         .author-credit {
             color: rgba(255,255,255,0.8);
@@ -40135,36 +40134,54 @@
     <div class="back-to-top" id="backToTop" onclick="window.scrollTo({top:0,behavior:'smooth'})">↑</div>
 
     <script>
-        // Search functionality
+        // Search functionality (optimized with batching)
         const searchInput = document.getElementById('searchInput');
+        const sections = document.querySelectorAll('.module-section');
+        const items = document.querySelectorAll('.table-item');
         let searchTimeout;
+        let lastQuery = '';
+        
         searchInput.addEventListener('input', function() {
             clearTimeout(searchTimeout);
             const query = this.value.toLowerCase();
-            const sections = document.querySelectorAll('.module-section');
-            const items = document.querySelectorAll('.table-item');
+            
+            // Skip if query hasn't changed
+            if (query === lastQuery) return;
+            lastQuery = query;
+            
+            searchTimeout = setTimeout(() => {
+                requestAnimationFrame(() => {
+                    if (!query) {
+                        sections.forEach(s => s.classList.remove('hidden'));
+                        items.forEach(i => {
+                            i.classList.remove('hidden');
+                            i.classList.remove('search-highlight');
+                        });
+                        return;
+                    }
 
-            if (!query) {
-                sections.forEach(s => s.classList.remove('hidden'));
-                items.forEach(i => {
-                    i.classList.remove('hidden');
-                    i.classList.remove('search-highlight');
+                    let firstMatch = null;
+                    items.forEach(item => {
+                        const text = item.textContent.toLowerCase();
+                        const matches = text.includes(query);
+                        item.classList.toggle('hidden', !matches);
+                        item.classList.toggle('search-highlight', matches);
+                        if (matches && !firstMatch) firstMatch = item;
+                    });
+
+                    sections.forEach(section => {
+                        const hasVisible = section.querySelector('.table-item:not(.hidden)');
+                        section.classList.toggle('hidden', !hasVisible);
+                    });
+
+                    // Scroll to first match
+                    if (firstMatch) {
+                        const headerHeight = document.querySelector('header').offsetHeight;
+                        const targetPosition = firstMatch.getBoundingClientRect().top + window.pageYOffset - headerHeight - 5;
+                        window.scrollTo({ top: targetPosition, behavior: 'smooth' });
+                    }
                 });
-                return;
-            }
-
-            let firstMatch = null;
-            items.forEach(item => {
-                const text = item.textContent.toLowerCase();
-                if (text.includes(query)) {
-                    item.classList.remove('hidden');
-                    item.classList.add('search-highlight');
-                    if (!firstMatch) firstMatch = item;
-                } else {
-                    item.classList.add('hidden');
-                    item.classList.remove('search-highlight');
-                }
-            });
+            }, 200);
 
             sections.forEach(section => {
                 const visibleItems = section.querySelectorAll('.table-item:not(.hidden)');
@@ -40175,65 +40192,72 @@
                 }
             });
 
-            // Scroll to first match with offset for sticky header
-            if (firstMatch) {
-                searchTimeout = setTimeout(() => {
-                    const headerHeight = document.querySelector('header').offsetHeight;
-                    const targetPosition = firstMatch.getBoundingClientRect().top + window.pageYOffset - headerHeight - 5;
-                    window.scrollTo({ top: targetPosition, behavior: 'smooth' });
-                }, 300);
-            }
+
         });
 
-        // Sidebar navigation with highlight
+        // Sidebar navigation with highlight (optimized)
+        let lastHighlighted = null;
+        let highlightTimer = null;
+        
         document.querySelectorAll('.module-list a').forEach(link => {
             link.addEventListener('click', function(e) {
                 e.preventDefault();
                 const href = this.getAttribute('href');
                 const target = document.querySelector(href);
                 if (target) {
-                    // Remove previous highlights
-                    document.querySelectorAll('.highlight').forEach(el => el.classList.remove('highlight'));
+                    // Remove previous highlight (only one element)
+                    if (lastHighlighted) {
+                        lastHighlighted.classList.remove('highlight');
+                        clearTimeout(highlightTimer);
+                    }
                     
                     // Scroll to target with offset for sticky header
                     const headerHeight = document.querySelector('header').offsetHeight;
                     const targetPosition = target.getBoundingClientRect().top + window.pageYOffset - headerHeight - 5;
                     window.scrollTo({ top: targetPosition, behavior: 'smooth' });
                     
-                    // Add highlight effect
+                    // Add subtle highlight effect
                     target.classList.add('highlight');
+                    lastHighlighted = target;
                     
-                    // Remove highlight after animation
-                    setTimeout(() => target.classList.remove('highlight'), 2000);
+                    // Remove highlight after delay
+                    highlightTimer = setTimeout(() => {
+                        target.classList.remove('highlight');
+                        lastHighlighted = null;
+                    }, 2000);
                 }
                 document.querySelectorAll('.module-list a').forEach(l => l.classList.remove('active'));
                 this.classList.add('active');
             });
         });
 
-        // Back to top button
+        // Back to top button (with passive listener)
         const backToTop = document.getElementById('backToTop');
+        let scrollTicking = false;
         window.addEventListener('scroll', function() {
-            if (window.scrollY > 300) {
-                backToTop.classList.add('visible');
-            } else {
-                backToTop.classList.remove('visible');
+            if (!scrollTicking) {
+                scrollTicking = true;
+                requestAnimationFrame(() => {
+                    backToTop.classList.toggle('visible', window.scrollY > 300);
+                    scrollTicking = false;
+                });
             }
-        });
+        }, { passive: true });
 
-        // Module search functionality
+        // Module search functionality (debounced)
         const moduleSearch = document.getElementById('moduleSearch');
         const moduleLinks = document.querySelectorAll('.module-list li');
+        let searchTimer = null;
+        
         moduleSearch.addEventListener('input', function() {
+            clearTimeout(searchTimer);
             const query = this.value.toLowerCase();
-            moduleLinks.forEach(li => {
-                const text = li.textContent.toLowerCase();
-                if (!query || text.includes(query)) {
-                    li.style.display = '';
-                } else {
-                    li.style.display = 'none';
-                }
-            });
+            searchTimer = setTimeout(() => {
+                moduleLinks.forEach(li => {
+                    const text = li.textContent.toLowerCase();
+                    li.style.display = (!query || text.includes(query)) ? '' : 'none';
+                });
+            }, 150);
         });
     </script>
 </body>
