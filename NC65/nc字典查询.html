@@ -40178,7 +40178,7 @@
                     if (firstMatch) {
                         const headerHeight = document.querySelector('header').offsetHeight;
                         const targetPosition = firstMatch.getBoundingClientRect().top + window.pageYOffset - headerHeight - 5;
-                        window.scrollTo({ top: targetPosition, behavior: 'smooth' });
+                        window.scrollTo({ top: targetPosition });
                     }
                 });
             }, 200);
@@ -40214,7 +40214,7 @@
                     // Scroll to target with offset for sticky header
                     const headerHeight = document.querySelector('header').offsetHeight;
                     const targetPosition = target.getBoundingClientRect().top + window.pageYOffset - headerHeight - 5;
-                    window.scrollTo({ top: targetPosition, behavior: 'smooth' });
+                    window.scrollTo({ top: targetPosition });
                     
                     // Add subtle highlight effect
                     target.classList.add('highlight');
