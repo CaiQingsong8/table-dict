@@ -1,0 +1,429 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>澳华集团数仓血缘关系图</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+
+:root{
+  --bg:#0c0e11;--surface:#14171c;--surface-raised:#1a1e25;
+  --border:#252a33;--border-bright:#323842;
+  --primary:#00e59b;--primary-dim:#00b87c;--primary-glow:rgba(0,229,155,.08);
+  --accent:#e5a000;--accent-dim:#b37d00;--accent-glow:rgba(229,160,0,.08);
+  --on:#c8cdd5;--on-muted:#7a8290;--on-bright:#e8ecf1;
+  --error:#e54848;
+  --mono:'JetBrains Mono','SF Mono','Fira Code','Cascadia Code',monospace;
+  --mono-xs:12px;--mono-sm:13px;--mono-md:14px;--mono-base:16px;--mono-lg:20px;--mono-xl:24px;--mono-display:34px;
+}
+
+html{background:var(--bg);font-size:16px;-webkit-font-smoothing:antialiased}
+body{
+  font-family:var(--mono);color:var(--on);background:var(--bg);
+  line-height:1.5;height:100vh;overflow:hidden;
+}
+body::after{
+  content:'';position:fixed;inset:0;pointer-events:none;z-index:9999;
+  background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,.03) 2px,rgba(0,0,0,.03) 4px);
+}
+::selection{background:var(--primary);color:var(--bg)}
+a{text-decoration:none;transition:color .15s}
+
+/* ─── Page ─────────────────────────────────────── */
+.page{
+  width:100%;height:100vh;display:flex;flex-direction:column;
+  padding:10px 40px 8px;gap:6px;overflow:hidden;
+}
+
+/* ─── Header ───────────────────────────────────── */
+.header{
+  border:1px solid var(--border);background:var(--surface);
+  padding:14px 24px 12px;position:relative;overflow:hidden;flex-shrink:0;text-align:center;
+}
+.header::before{
+  content:'';position:absolute;top:0;left:0;right:0;height:2px;
+  background:linear-gradient(90deg,transparent,var(--primary),var(--accent),var(--primary),transparent);opacity:.6;
+}
+.header::after{
+  content:'';position:absolute;bottom:0;left:0;right:0;height:1px;
+  background:linear-gradient(90deg,transparent,var(--accent),transparent);opacity:.3;
+}
+.header-top{display:flex;justify-content:center;align-items:center;gap:20px}
+.header-title{text-align:center}
+.header-title h1{
+  font-size:var(--mono-display);font-weight:700;color:var(--on-bright);
+  letter-spacing:.04em;line-height:1.1;margin-bottom:4px;
+  text-shadow:0 0 20px rgba(0,229,155,.25),0 0 40px rgba(0,229,155,.1);
+}
+.header-title h1 .cursor{
+  display:inline-block;width:2px;height:28px;background:var(--primary);
+  margin-left:4px;animation:blink 1s step-end infinite;vertical-align:baseline;
+  box-shadow:0 0 8px var(--primary);
+}
+@keyframes blink{50%{opacity:0}}
+.header-title .subtitle{font-size:var(--mono-md);color:var(--on-muted);letter-spacing:.04em}
+.header-meta{
+  position:absolute;right:24px;top:50%;transform:translateY(-50%);
+  display:flex;gap:16px;align-items:center;
+  font-size:var(--mono-xs);color:var(--on-muted);letter-spacing:.03em;
+}
+.header-meta .dot{width:6px;height:6px;border-radius:50%;background:var(--primary);display:inline-block;margin-right:5px;animation:pulse 2s ease-in-out infinite;box-shadow:0 0 6px var(--primary)}
+@keyframes pulse{0%,100%{opacity:1;box-shadow:0 0 6px var(--primary)}50%{opacity:.4;box-shadow:0 0 2px var(--primary)}}
+
+/* ─── Status Bar ───────────────────────────────── */
+.status-bar{
+  display:flex;gap:0;border:1px solid var(--border);background:var(--surface);overflow:hidden;flex-shrink:0;
+}
+.status-item{
+  flex:1;padding:8px 18px;border-right:1px solid var(--border);
+  display:flex;flex-direction:column;gap:1px;
+}
+.status-item:last-child{border-right:none}
+.status-label{font-size:var(--mono-xs);color:var(--on-muted);letter-spacing:.06em;text-transform:uppercase}
+.status-value{font-size:var(--mono-lg);font-weight:600;color:var(--on-bright);font-variant-numeric:tabular-nums}
+.status-value .unit{font-size:var(--mono-xs);font-weight:400;color:var(--on-muted);margin-left:3px}
+.status-value.green{color:var(--primary);text-shadow:0 0 10px rgba(0,229,155,.3)}
+.status-value.amber{color:var(--accent);text-shadow:0 0 10px rgba(229,160,0,.3)}
+
+/* ─── Cards ────────────────────────────────────── */
+.cards{
+  display:grid;grid-template-columns:1fr 1fr;gap:0;
+  border:1px solid var(--border);
+}
+
+/* ─── Tool Card ────────────────────────────────── */
+.tool-card{
+  background:var(--surface);display:flex;flex-direction:column;
+  overflow:hidden;min-height:0;transition:box-shadow .3s;
+}
+.tool-card:first-child{border-right:1px solid var(--border)}
+.tool-card:hover{box-shadow:inset 0 0 30px rgba(0,229,155,.03)}
+
+.tool-card-header{
+  padding:12px 24px 10px;
+  display:flex;justify-content:space-between;align-items:center;flex-shrink:0;
+}
+.tool-card-header h2{font-size:var(--mono-lg);font-weight:600;color:var(--on-bright)}
+.tool-card-header .tag{
+  font-size:var(--mono-xs);padding:3px 10px;letter-spacing:.04em;
+  border:1px solid var(--border-bright);color:var(--on-muted);
+}
+.tag-ck{border-color:rgba(0,229,155,.3);color:var(--primary)}
+.tag-nc{border-color:rgba(229,160,0,.3);color:var(--accent)}
+
+.tool-card-body{
+  padding:10px 24px;display:flex;flex-direction:column;gap:10px;
+}
+
+.tool-desc{font-size:var(--mono-base);color:var(--on-muted);line-height:1.7}
+
+.tool-stats{
+  display:grid;grid-template-columns:repeat(4,1fr);gap:8px;flex-shrink:0;
+}
+.tool-stat{
+  background:var(--surface-raised);padding:8px 12px;border:1px solid var(--border);
+}
+.tool-stat .val{font-size:var(--mono-xl);font-weight:600;color:var(--on-bright);font-variant-numeric:tabular-nums}
+.tool-stat .lbl{font-size:var(--mono-xs);color:var(--on-muted);margin-top:2px}
+
+/* ─── CTA (inside body) ────────────────────────── */
+.tool-cta{
+  padding:6px 0 0;flex-shrink:0;
+  display:flex;justify-content:flex-end;
+}
+.btn{
+  display:inline-flex;align-items:center;gap:8px;
+  padding:12px 36px;font-family:var(--mono);font-size:var(--mono-lg);font-weight:700;
+  border:1px solid var(--border-bright);background:var(--surface-raised);color:var(--on);
+  cursor:pointer;transition:all .15s;letter-spacing:.03em;text-decoration:none;
+}
+.btn:hover{border-color:var(--on-muted);color:var(--on-bright);background:var(--surface)}
+.btn-primary{background:var(--primary);color:var(--bg);border-color:var(--primary);box-shadow:0 0 16px rgba(0,229,155,.3)}
+.btn-primary:hover{background:var(--primary-dim);border-color:var(--primary-dim);color:var(--bg);box-shadow:0 0 24px rgba(0,229,155,.4)}
+.btn-accent{background:var(--accent);color:var(--bg);border-color:var(--accent);box-shadow:0 0 16px rgba(229,160,0,.3)}
+.btn-accent:hover{background:var(--accent-dim);border-color:var(--accent-dim);color:var(--bg);box-shadow:0 0 24px rgba(229,160,0,.4)}
+
+.tool-features{list-style:none;display:flex;flex-direction:column;gap:6px}
+.tool-features li{font-size:var(--mono-base);color:var(--on);padding-left:18px;position:relative;line-height:1.6}
+.tool-features li::before{content:'→';position:absolute;left:0;color:var(--primary)}
+
+/* ─── Linkage Callout ──────────────────────────── */
+.callout{
+  border:1px solid rgba(229,160,0,.25);background:var(--accent-glow);
+  padding:8px 20px;display:flex;gap:14px;align-items:center;flex-shrink:0;
+}
+.callout-icon{font-size:var(--mono-xl);color:var(--accent);flex-shrink:0;line-height:1}
+.callout-body{flex:1}
+.callout-body h3{font-size:var(--mono-md);font-weight:600;color:var(--accent);margin-bottom:2px}
+.callout-body p{font-size:var(--mono-base);color:var(--on);line-height:1.5}
+
+/* ─── Data Flow (Horizontal, BIG) ─────────────── */
+.data-flow{
+  flex:1;border:1px solid var(--border);background:var(--surface);overflow:hidden;
+  display:flex;flex-direction:column;min-height:0;
+}
+.data-flow-header{
+  padding:10px 24px;border-bottom:1px solid var(--border);flex-shrink:0;
+  display:flex;justify-content:space-between;align-items:center;
+}
+.data-flow-header h2{font-size:var(--mono-lg);font-weight:600;color:var(--on-bright)}
+.data-flow-header .note{font-size:var(--mono-xs);color:var(--on-muted)}
+.data-flow-body{
+  flex:1;padding:16px 24px;display:flex;align-items:center;justify-content:center;min-height:0;
+}
+
+.flow-h{
+  display:flex;align-items:center;gap:0;font-family:var(--mono);white-space:nowrap;
+}
+.flow-node{
+  padding:14px 24px;border:1px solid var(--border);background:var(--surface-raised);
+  text-align:center;flex-shrink:0;
+}
+.flow-node .fn-title{font-weight:600;font-size:var(--mono-xl);line-height:1.3}
+.flow-node .fn-sub{font-size:var(--mono-sm);color:var(--on-muted);margin-top:4px}
+.flow-node .fn-detail{font-size:var(--mono-xs);color:var(--on-muted);margin-top:5px;opacity:.7;letter-spacing:.02em}
+.flow-node.nc{border-color:rgba(229,160,0,.4);box-shadow:0 0 16px rgba(229,160,0,.12)}
+.flow-node.nc .fn-title{color:var(--accent)}
+.flow-node.dim{border-color:rgba(124,109,216,.4);box-shadow:0 0 16px rgba(124,109,216,.12)}
+.flow-node.dim .fn-title{color:#7c6dd8}
+.flow-node.dwd{border-color:rgba(0,229,155,.4);box-shadow:0 0 16px rgba(0,229,155,.12)}
+.flow-node.dwd .fn-title{color:var(--primary)}
+.flow-node.dws{border-color:rgba(77,166,201,.4);box-shadow:0 0 16px rgba(77,166,201,.12)}
+.flow-node.dws .fn-title{color:#4da6c9}
+.flow-node.ads{border-color:rgba(77,204,169,.4);box-shadow:0 0 16px rgba(77,204,169,.12)}
+.flow-node.ads .fn-title{color:#4dcca9}
+.flow-arrow{
+  display:flex;flex-direction:column;align-items:center;gap:2px;
+  padding:0 10px;flex-shrink:0;color:var(--on-muted);
+}
+.flow-arrow .arr-line{width:32px;height:2px;background:linear-gradient(90deg,var(--border-bright),var(--on-muted),var(--border-bright))}
+.flow-arrow .arr-label{font-size:var(--mono-xs);letter-spacing:.03em;white-space:nowrap}
+.flow-arrow .arr-head{font-size:16px;line-height:1;color:var(--on)}
+
+/* ─── Footer ───────────────────────────────────── */
+.footer{
+  padding:2px 0 0;display:flex;justify-content:space-between;align-items:center;
+  font-size:var(--mono-xs);color:var(--on-muted);flex-shrink:0;
+}
+.footer-links{display:flex;gap:16px}
+.footer-links a{color:var(--on-muted);font-size:var(--mono-xs)}
+.footer-links a:hover{color:var(--primary)}
+
+/* ─── Responsive ───────────────────────────────── */
+@media(max-width:900px){
+  .page{padding:10px 16px 8px}
+  .cards{grid-template-columns:1fr}
+  .tool-card:first-child{border-right:none;border-bottom:1px solid var(--border)}
+  .header-title h1{font-size:22px}
+  .status-bar{flex-wrap:wrap}
+  .status-item{min-width:calc(33% - 1px)}
+  .flow-h{flex-wrap:wrap;justify-content:center}
+}
+</style>
+</head>
+<body>
+
+<div class="page">
+
+  <!-- Header -->
+  <header class="header">
+    <div class="header-top">
+      <div class="header-title">
+        <h1>澳华集团数仓血缘关系图<span class="cursor"></span></h1>
+        <div class="subtitle">// ClickHouse数仓 & NC65 ERP 数据字典 — 蔡青松</div>
+      </div>
+      <div class="header-meta">
+        <span><span class="dot"></span>ONLINE</span>
+        <span>v3.0.0</span>
+      </div>
+    </div>
+  </header>
+
+  <!-- Status Bar -->
+  <div class="status-bar">
+    <div class="status-item">
+      <span class="status-label">数仓表</span>
+      <span class="status-value green">87<span class="unit">tables</span></span>
+    </div>
+    <div class="status-item">
+      <span class="status-label">数仓视图</span>
+      <span class="status-value green">4<span class="unit">views</span></span>
+    </div>
+    <div class="status-item">
+      <span class="status-label">调度工作流</span>
+      <span class="status-value green">10<span class="unit">workflows</span></span>
+    </div>
+    <div class="status-item">
+      <span class="status-label">NC65表</span>
+      <span class="status-value amber">5312<span class="unit">tables</span></span>
+    </div>
+    <div class="status-item">
+      <span class="status-label">NC65模块</span>
+      <span class="status-value amber">179<span class="unit">modules</span></span>
+    </div>
+    <div class="status-item">
+      <span class="status-label">跨库联动</span>
+      <span class="status-value" style="color:var(--on-bright)">66<span class="unit">links</span></span>
+    </div>
+  </div>
+
+  <!-- Tool Cards -->
+  <div class="cards">
+
+    <!-- CK Tool Card -->
+    <div class="tool-card">
+      <div class="tool-card-header">
+        <h2>ClickHouse 数仓</h2>
+        <span class="tag tag-ck">DATA WAREHOUSE</span>
+      </div>
+      <div class="tool-card-body">
+        <p class="tool-desc">87张物理表 + 4个视图，覆盖 DIM / DWD / DWS / ADS / ODS 五层架构，含完整 DDL、取数 SQL 和血缘关系。</p>
+        <div class="tool-stats">
+          <div class="tool-stat">
+            <div class="val">38</div>
+            <div class="lbl">DIM 维度层</div>
+          </div>
+          <div class="tool-stat">
+            <div class="val">34</div>
+            <div class="lbl">DWD 明细层</div>
+          </div>
+          <div class="tool-stat">
+            <div class="val">8</div>
+            <div class="lbl">DWS 汇总层</div>
+          </div>
+          <div class="tool-stat">
+            <div class="val">1</div>
+            <div class="lbl">ADS 应用层</div>
+          </div>
+        </div>
+        <ul class="tool-features">
+          <li>按分层筛选 (DIM / DWD / DWS / ADS / ODS)</li>
+          <li>全文搜索：表名、字段名、中文名、注释</li>
+          <li>DDL 建表语句 + 取数 SQL（语法高亮）</li>
+          <li>表间血缘关系 + 工作流 DAG 可视化</li>
+          <li>DWD 层 NC 上游表可直接跳转 NC65 字典</li>
+        </ul>
+        <div class="tool-cta">
+          <a href="ClickHouse/数据字典查询.html" class="btn btn-primary">ClickHouse 字典查询 →</a>
+        </div>
+      </div>
+    </div>
+
+    <!-- NC65 Tool Card -->
+    <div class="tool-card">
+      <div class="tool-card-header">
+        <h2>NC65 ERP</h2>
+        <span class="tag tag-nc">ERP SYSTEM</span>
+      </div>
+      <div class="tool-card-body">
+        <p class="tool-desc">用友 NC65 ERP 系统数据字典。5312张业务表，覆盖 179个功能模块，从 CHM 文档转换为可搜索的 Web 格式。</p>
+        <div class="tool-stats">
+          <div class="tool-stat">
+            <div class="val">5312</div>
+            <div class="lbl">业务表</div>
+          </div>
+          <div class="tool-stat">
+            <div class="val">179</div>
+            <div class="lbl">功能模块</div>
+          </div>
+          <div class="tool-stat">
+            <div class="val">66</div>
+            <div class="lbl">被CK引用</div>
+          </div>
+        </div>
+        <ul class="tool-features">
+          <li>模块导航 + 全文搜索（表名、描述）</li>
+          <li>单表详情页：字段定义、类型、枚举</li>
+          <li>字段间引用关系可追溯</li>
+          <li>主子表关联链接</li>
+          <li>支持从 CK 血缘标签直接跳入</li>
+        </ul>
+        <div class="tool-cta">
+          <a href="NC65/nc字典查询.html" class="btn btn-accent">NC65 字典查询 →</a>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Data Flow (Horizontal) -->
+  <div class="data-flow">
+    <div class="data-flow-header">
+      <h2>数据流向 Data Flow</h2>
+      <span class="note">NC65 → ETL → DIM → DWD → DWS → ADS</span>
+    </div>
+    <div class="data-flow-body">
+      <div class="flow-h">
+        <div class="flow-node nc">
+          <div class="fn-title">NC65 ERP</div>
+          <div class="fn-sub">5312 tables</div>
+          <div class="fn-detail">bd_material / so_saleorder / gl_balance</div>
+        </div>
+        <div class="flow-arrow">
+          <span class="arr-label">DataX / ETL</span>
+          <div class="arr-line"></div>
+          <span class="arr-head">→</span>
+        </div>
+        <div class="flow-node dim">
+          <div class="fn-title">DIM 维度层</div>
+          <div class="fn-sub">38 tables</div>
+          <div class="fn-detail">基础档案 → 维度建模</div>
+        </div>
+        <div class="flow-arrow">
+          <div class="arr-line"></div>
+          <span class="arr-head">→</span>
+        </div>
+        <div class="flow-node dwd">
+          <div class="fn-title">DWD 明细层</div>
+          <div class="fn-sub">34 tables</div>
+          <div class="fn-detail">业务单据 → 明细宽表</div>
+        </div>
+        <div class="flow-arrow">
+          <div class="arr-line"></div>
+          <span class="arr-head">→</span>
+        </div>
+        <div class="flow-node dws">
+          <div class="fn-title">DWS 汇总层</div>
+          <div class="fn-sub">8 tables</div>
+          <div class="fn-detail">DWD 聚合 → 主题汇总</div>
+        </div>
+        <div class="flow-arrow">
+          <div class="arr-line"></div>
+          <span class="arr-head">→</span>
+        </div>
+        <div class="flow-node ads">
+          <div class="fn-title">ADS 应用层</div>
+          <div class="fn-sub">1 table</div>
+          <div class="fn-detail">利润贡献度快照</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Linkage Callout (bottom) -->
+  <div class="callout">
+    <div class="callout-icon">⚡</div>
+    <div class="callout-body">
+      <h3>跨库联动已启用</h3>
+      <p>DWD 层 <strong>66 个 NC 上游表</strong>血缘依赖。<span style="color:var(--accent)">琥珀色</span> = NC 源表（跳转 NC65），<span style="color:var(--primary)">绿色</span> = CK 内部表（CK 内定位）。</p>
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <footer class="footer">
+    <span>澳华集团数仓血缘关系图 // 蔡青松</span>
+    <div class="footer-links">
+      <a href="ClickHouse/数据字典查询.html">CK 查询</a>
+      <a href="NC65/nc字典查询.html">NC65 查询</a>
+      <a href="https://github.com/CaiQingsong8/ck-table-view" target="_blank">GitHub</a>
+    </div>
+  </footer>
+
+</div>
+
+</body>
+</html>

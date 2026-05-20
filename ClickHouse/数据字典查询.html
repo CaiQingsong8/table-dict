@@ -62,6 +62,12 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;b
 .no-results{text-align:center;padding:60px 20px;color:#b2bec3}
 .no-results h3{font-size:18px;margin-bottom:8px}
 
+/* NC65 cross-link tags */
+.lineage-tag.nc-link{background:#fff3e0;color:#e17055;cursor:pointer;text-decoration:none;display:inline-flex;align-items:center;gap:4px;transition:all .2s}
+.lineage-tag.nc-link:hover{background:#ffe0b2;color:#d35400}
+.lineage-tag.nc-link::after{content:'↗';font-size:10px;opacity:.7}
+.lineage-tag.nc-link.no-match::after{content:''}
+
 /* SQL Modal */
 .modal-overlay{display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.5);z-index:200;justify-content:center;align-items:center}
 .modal-overlay.show{display:flex}
@@ -216,6 +222,9 @@ const WORKFLOWS = {"4job-nc_fin": [{"name": "\u5f00\u59cb", "type": "DEPENDENT",
 // ========== Layer colors ==========
 const LAYER_COLORS = {ODS:'#b2bec3',DIM:'#6c5ce7',DWD:'#065A82',DWS:'#1C7293',ADS:'#00b894',OTHER:'#636e72'};
 
+// ========== NC65 table name -> page file mapping (for cross-dictionary linking) ==========
+const NC_TABLE_MAP = {"bd_billtype":"74f13f3d-21cd-4800-9c7c-053f14ceb8dc.html","bd_customer":"e4f48eaf-5567-4383-a370-a59cb3e8a451.html","bd_custsale":"2f6e0d52-ada9-43d1-b729-ef640b524625.html","bd_defdoc":"1001Z71000000000GP4T.html","bd_material":"c7dc0ccd-8872-4eee-8882-160e8f49dfad.html","org_dept":"58115861-ce2b-44e8-b881-80119db7bf84.html","org_financeorg":"2cfe13c5-9757-4ae8-9327-f5c2d34bcb46.html","so_arsub":"dc09fd97-b295-45f8-a77b-a16d737c1548.html","so_arsub_b":"b7dc3188-ba3a-4e79-87d9-38d5a7fa93a5.html","sr_settle":"d6462c0f-297d-4244-aa3e-8ed01557db57.html","sr_settle_b":"db19d3cc-cc49-46be-a5ec-1f5422a1f09e.html","bd_marbasclass":"c099f7d7-52a9-4b98-bee7-2e3a6c3ea263.html","bd_measdoc":"8e668e99-3c0e-401a-8f55-3d192e055c3c.html","bd_psndoc":"218971f0-e5dc-408b-9a32-56529dddd4db.html","bd_stordoc":"5489bda0-d876-4db2-9568-02954f240cc8.html","bd_supplier":"720dcc7c-ff19-48f4-b9c5-b90906682f45.html","sm_user":"f6f9a473-56c0-432f-8bc7-fbf8fde54fee.html","org_corp":"4d514224-de70-44dd-bf70-f14a02f29d10.html","ic_flow":"40cfa176-a9fd-414d-bbdc-a73bc16fbbbb.html","ia_monthnab":"57589684-8297-428f-97d7-0044137cd102.html","ia_detailledger":"8ca7c90e-036a-4ea5-a4cf-9b858594b7c2.html","bd_accasoa":"407748f1-1fe8-4f0d-880e-ae8b0960308f.html","bd_account":"23a89307-5992-460e-95dd-c628c85f7f95.html","gl_balance":"4efe25f3-a83f-46b8-9951-b523bca32215.html","bd_accperiodmonth":"7b07b508-6f3b-4314-a1dc-cdbcf39afded.html","so_saleorder":"b4bde646-3f4d-4b95-919f-8ebe03c5f849.html","so_saleorder_b":"53ff415f-e2b0-45be-acc7-5f6d0f4dbdb3.html","po_order":"8a2b1c3f-0185-40f6-b4a1-eb9d1733ebcf.html","po_order_b":"290ca875-3210-4bf4-a1b5-d8f47fff36f8.html","ia_i5bill":"i58ae7e1-0edf-4b7e-9aea-c203215f2bb4.html","ia_i5bill_b":"i5fdce7e-7daf-4ebd-8a1e-8fb13dc69b22.html","ia_iabill":"ec545ab9-8879-4df2-907d-8ea30c84b5f7.html","ia_iabill_b":"58c068f9-de2a-4c61-ae1b-14bec140ee50.html","cm_prodcost":"fe0481db-cd2a-471a-97fe-09a62474d041.html","cm_prodcost_b":"ebdb66b6-89c3-4bcb-84ec-e8d6668cf681.html","resa_factorasoa":"37e3adca-e0a0-4dff-82ea-63b335cf5515.html","org_factory":"5144b675-b681-4509-809e-6eb311db39b4.html","prm_priceform_p":"ca22b4be-50a1-415b-8ac5-d1e2422e12af.html","prm_tariff":"b8ee3ff6-d259-48b0-9dc9-9d0546abfad2.html","sr_plcy":"7559c395-ff33-446a-ab17-1e5145dab254.html","sr_plcy_cust":"136a04b6-3194-45b2-96fe-006006c1aedc.html","sr_plcy_mar":"dbdc2c76-7a54-466d-ba8f-809a54f3b785.html","sr_plcy_calrule":"dbd46ddf-6959-461c-ae2e-a1b036ec7fd3.html","sr_plcy_caldet":"ad69ae12-d820-4012-9f6c-4171870400c2.html","sr_marcombine":"87c5ac61-6416-41ca-92a2-94ea0adf021c.html","sr_marcombine_b":"c22d179d-9235-44d8-99a1-dca6ff5c3727.html","bd_defdoclist":"16c1dca0-e3ed-4dcc-8ed7-75fd59e2bef1.html","bd_address":"e991779c-faa3-42a6-960f-c38f68dfe204.html","bd_region":"988d7c0e-d94e-4c45-ac8e-1bce109a343a.html","bd_areacl":"7f91af95-154e-43f9-995e-da76a192be15.html","bd_supplierclass":"dbacb77c-8a6c-4e50-aab2-d4500383b7b7.html","bd_custclass":"b941438d-ce1f-4fd7-b972-f4f342fbd04f.html","bd_branddoc":"3ee53558-6398-4096-a91f-c7aa00e93701.html","bd_prodline":"029c4c8f-39bb-4208-acc0-c3f66632f328.html","bd_mattaxes":"4866d40e-f667-4cb7-81f3-4de09b853d96.html","bd_materialconvert":"07adba95-d16a-45ae-8487-26d5a56f14bd.html","org_orgs":"985be8a4-3a36-4778-8afe-2d8ed3902659.html","org_costregion":"2b177ab7-a3a9-4cc4-bda7-5f99ec99efaf.html","org_stockorg":"46c4bfba-0b40-4855-87f8-c2ac8647f039.html","org_salesorg":"945f38b6-48ec-43e6-bb09-77ec89a3728f.html","org_purchaseorg":"5d69ee35-57d0-4f7b-b454-deff4fc73689.html","org_dept_v":"66ed0cf6-e260-4f39-8fbb-172260efd677.html","so_buylargess":"075259cc-d4d8-4c0e-9885-04413914daea.html","po_order_payment":"6f7c5122-2fbc-4dcf-96af-5d3fb88248dc.html"};
+
 // ========== Tab switching ==========
 function switchTab(tab) {
   document.querySelectorAll('.tab-btn').forEach((b,i) => {
@@ -294,6 +303,10 @@ function highlightText(text, query) {
 
 function getSourceTag(source) {
   const isOracle = !source.startsWith('dwd_') && !source.startsWith('dws_') && !source.startsWith('dim_') && !source.startsWith('ods_') && !source.startsWith('ads_') && !source.startsWith('v_');
+  if (isOracle && NC_TABLE_MAP[source]) {
+    const ncUrl = '../NC65/pages/' + NC_TABLE_MAP[source];
+    return '<a class="lineage-tag nc-link" href="' + ncUrl + '" target="_blank" onclick="event.stopPropagation()" title="在NC65字典中查看 ' + escapeHtml(source) + '">' + escapeHtml(source) + '</a>';
+  }
   return '<span class="lineage-tag' + (isOracle ? ' oracle' : '') + '" onclick="event.stopPropagation();showTableFromTag(\'' + source + '\')">' + escapeHtml(source) + '</span>';
 }
 
